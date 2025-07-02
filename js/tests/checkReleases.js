@@ -19,7 +19,7 @@ export async function run({ ui }) {
     if (current && previous) {
       ui.appendSummary(`<p style="color:green">✅ Current release: ${current}, Previous release: ${previous}</p>`);
     } else {
-      ui.appendSummary('<p style="color:red">❌ Could not find at least two releases (with META folders) in the releases directory.</p>');
+      ui.appendSummary('<p style="color:red">❌ Could not find at least two releases (with rrf folders) in the releases directory.</p>');
     }
   } catch (err) {
     ui.appendSummary(`<p style="color:red">Error checking releases: ${err.message}</p>`);

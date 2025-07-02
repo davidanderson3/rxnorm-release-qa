@@ -18,7 +18,7 @@ async function detectReleases() {
         const stat = await fsp.stat(full);
         if (stat.isDirectory()) {
           const subEntries = await fsp.readdir(full);
-          if (subEntries.some(d => d.toLowerCase() === 'meta')) {
+          if (subEntries.some(d => d.toLowerCase() === 'rrf')) {
             releaseList.push(entry);
           }
         }
@@ -58,8 +58,8 @@ async function listFiles(dir, base = dir) {
 }
 
 async function generateLineCountDiff(current, previous) {
-  const currentMeta = path.join(releasesDir, current, 'META');
-  const previousMeta = path.join(releasesDir, previous, 'META');
+  const currentMeta = path.join(releasesDir, current, 'rrf');
+  const previousMeta = path.join(releasesDir, previous, 'rrf');
   const result = [];
   const currFiles = await listFiles(currentMeta).catch(() => []);
   const prevFiles = await listFiles(previousMeta).catch(() => []);
@@ -224,8 +224,8 @@ function buildDiffData(sab, tty, baseRows, prevRows) {
 }
 
 async function generateSABDiff(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'META', 'MRCONSO.RRF');
-  const previousFile = path.join(releasesDir, previous, 'META', 'MRCONSO.RRF');
+  const currentFile = path.join(releasesDir, current, 'rrf', 'MRCONSO.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'MRCONSO.RRF');
   const baseCounts = await readCountsMRCONSO(currentFile);
   const prevCounts = await readCountsMRCONSO(previousFile);
 
@@ -278,8 +278,8 @@ async function generateSABDiff(current, previous) {
 }
 
 async function generateCountReport(current, previous, fileName, indices, tableName) {
-  const currentFile = path.join(releasesDir, current, 'META', fileName);
-  const previousFile = path.join(releasesDir, previous, 'META', fileName);
+  const currentFile = path.join(releasesDir, current, 'rrf', fileName);
+  const previousFile = path.join(releasesDir, previous, 'rrf', fileName);
   const baseCounts = await readCountsByIndices(currentFile, indices);
   const prevCounts = await readCountsByIndices(previousFile, indices);
   const summary = [];
