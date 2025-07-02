@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>UMLS Release QA</title>
+  <title>RxNorm Release QA</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <div class="container">
-    <h1 id="page-title" class="editable">UMLS Release QA</h1>
+    <h1 id="page-title" class="editable">RxNorm Release QA</h1>
     <div class="admin-controls">
       <button id="admin-toggle" class="editable">Admin Mode</button>
       <button id="save-texts" class="editable" style="display:none">Save</button>
@@ -31,8 +31,8 @@
         }
       } catch {}
       texts = texts || {};
-      document.title = texts.title || 'UMLS Release QA';
-      document.getElementById('page-title').textContent = texts.header || 'UMLS Release QA';
+      document.title = texts.title || 'RxNorm Release QA';
+      document.getElementById('page-title').textContent = texts.header || 'RxNorm Release QA';
       document.getElementById('run-preprocess').textContent = texts.runPreprocessButton || 'Run Preprocessing';
       document.getElementById('compare-lines').textContent = texts.compareLinesButton || 'Compare Line Counts';
       adminToggle.textContent = texts.adminToggleOff || 'Admin Mode';
@@ -115,7 +115,7 @@
         } else {
           status.innerHTML = `
             <p style="color:red">Could not find at least two release folders.</p>
-            <p>Please download the UMLS Metathesaurus Full Subset for the two latest releases and copy the complete contents after unzipping into the <code>releases</code> folder.</p>
+            <p>Please download the RxNorm full release files for the two latest versions and copy the <code>rrf</code> folders into the <code>releases</code> directory.</p>
           `;
         }
       } catch (err) {

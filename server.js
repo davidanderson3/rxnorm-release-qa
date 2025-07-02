@@ -7,8 +7,8 @@ const fsp = fs.promises;
 const reportsDir = path.join(__dirname, 'reports');
 const textsFile = path.join(__dirname, 'texts.json');
 const defaultTexts = {
-  title: 'UMLS Release QA',
-  header: 'UMLS Release QA',
+  title: 'RxNorm Release QA',
+  header: 'RxNorm Release QA',
   runPreprocessButton: 'Run Preprocessing',
   compareLinesButton: 'Compare Line Counts',
   adminToggleOff: 'Admin Mode',
@@ -38,7 +38,7 @@ async function detectReleases() {
         const stat = await fsp.stat(full);
         if (stat.isDirectory()) {
           const subEntries = await fsp.readdir(full);
-          if (subEntries.some(d => d.toLowerCase() === 'meta')) {
+          if (subEntries.some(d => d.toLowerCase() === 'rrf')) {
             releaseList.push(entry);
           }
         }
@@ -186,8 +186,8 @@ app.get('/api/line-count-diff', async (req, res) => {
     return;
   } catch {}
 
-  const currentMeta = path.join(releasesDir, current, 'META');
-  const previousMeta = path.join(releasesDir, previous, 'META');
+  const currentMeta = path.join(releasesDir, current, 'rrf');
+  const previousMeta = path.join(releasesDir, previous, 'rrf');
   const result = [];
 
   try {
