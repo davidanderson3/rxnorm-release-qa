@@ -1,108 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <title>RxNorm Release QA</title>
+  <title>UMLS Release QA</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
   <div class="container">
-    <h1 id="page-title" class="editable">RxNorm Release QA</h1>
-    <div class="admin-controls">
-      <button id="admin-toggle" class="editable">Admin Mode</button>
-      <button id="save-texts" class="editable" style="display:none">Save</button>
-    </div>
+    <h1 id="page-title" class="editable">UMLS Release QA</h1>
     <div id="status"></div>
-    <div id="sab-summary"></div>
-    <button id="run-preprocess" class="editable">Run Preprocessing</button>
+    <p id="note1" class="editable note"></p>
+    <button id="run-preprocess" class="editable">Run Reports</button>
+    <button id="rerun-preprocess">Re-run All Reports</button>
     <div id="preprocess-results"></div>
-    <button id="compare-lines" class="editable">Compare Line Counts</button>
+    <p id="note2" class="editable note"></p>
     <div id="line-results"></div>
+    <p id="note3" class="editable note"></p>
   </div>
 
   <script type="module">
     let texts = {};
+    let reportInterval = null;
+    const releaseMatch = window.location.pathname.match(/^\/([^/]+)/);
+    const currentRelease = releaseMatch ? releaseMatch[1] : '';
+
+    function apiUrl(path) {
+      const url = new URL(path, window.location);
+      if (currentRelease) url.searchParams.set('release', currentRelease);
+      return url.pathname + url.search;
+    }
 
     async function loadTexts() {
       try {
-        const resp = await fetch('/api/texts');
+        const resp = await fetch(apiUrl('/api/texts'));
         if (resp.ok) {
-          texts = await resp.json();
+          const remote = await resp.json();
+          texts = { ...remote, ...texts };
         }
-      } catch {}
+      } catch { }
       texts = texts || {};
-      document.title = texts.title || 'RxNorm Release QA';
-      document.getElementById('page-title').textContent = texts.header || 'RxNorm Release QA';
-      document.getElementById('run-preprocess').textContent = texts.runPreprocessButton || 'Run Preprocessing';
-      document.getElementById('compare-lines').textContent = texts.compareLinesButton || 'Compare Line Counts';
-      adminToggle.textContent = texts.adminToggleOff || 'Admin Mode';
-      saveBtn.textContent = texts.saveButton || 'Save';
+      document.title = texts.title || 'UMLS Release QA';
+      document.getElementById('page-title').textContent = texts.header || 'UMLS Release QA';
+      document.getElementById('run-preprocess').textContent = texts.runPreprocessButton || 'Run Reports';
+      document.getElementById('rerun-preprocess').textContent = texts.rerunAllButton || 'Re-run All Reports';
+      document.getElementById('note1').textContent = texts.note1 || '';
+      document.getElementById('note2').textContent = texts.note2 || '';
+      document.getElementById('note3').textContent = texts.note3 || '';
     }
-
-    loadTexts();
-
-    const adminToggle = document.getElementById('admin-toggle');
-    const saveBtn = document.getElementById('save-texts');
     function setEditable(on) {
       document.querySelectorAll('.editable').forEach(el => {
         el.contentEditable = on;
       });
     }
-    adminToggle.addEventListener('click', () => {
-      const editing = adminToggle.dataset.editing === 'true';
-      if (editing) {
-        texts.adminToggleOn = adminToggle.textContent;
-        adminToggle.dataset.editing = 'false';
-        adminToggle.textContent = texts.adminToggleOff || 'Admin Mode';
-        saveBtn.style.display = 'none';
-        setEditable(false);
-      } else {
-        texts.adminToggleOff = adminToggle.textContent;
-        adminToggle.dataset.editing = 'true';
-        adminToggle.textContent = texts.adminToggleOn || 'Exit Admin';
-        saveBtn.style.display = '';
-        setEditable(true);
-      }
+    loadTexts().then(() => {
+      setEditable(true);
+      document.querySelectorAll('.editable').forEach(el => {
+        el.addEventListener('blur', saveTexts);
+      });
     });
 
-    saveBtn.addEventListener('click', async () => {
-      if (adminToggle.dataset.editing === 'true') {
-        texts.adminToggleOn = adminToggle.textContent;
-      } else {
-        texts.adminToggleOff = adminToggle.textContent;
-      }
-      texts.saveButton = saveBtn.textContent;
+    async function saveTexts() {
       const payload = {
         title: document.title,
         header: document.getElementById('page-title').textContent,
         runPreprocessButton: document.getElementById('run-preprocess').textContent,
-        compareLinesButton: document.getElementById('compare-lines').textContent,
-        adminToggleOn: texts.adminToggleOn,
-        adminToggleOff: texts.adminToggleOff,
-        saveButton: texts.saveButton
+        rerunAllButton: document.getElementById('rerun-preprocess').textContent,
+        note1: document.getElementById('note1').textContent,
+        note2: document.getElementById('note2').textContent,
+        note3: document.getElementById('note3').textContent
       };
       try {
-        const resp = await fetch('/api/texts', {
+        await fetch(apiUrl('/api/texts'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (resp.ok) {
-          alert('Saved');
-        } else {
-          alert('Save failed');
-        }
-      } catch {
-        alert('Save failed');
-      }
-    });
+      } catch { }
+    }
 
     async function checkReleases() {
       const status = document.getElementById('status');
       try {
-        const resp = await fetch('/api/releases');
+        const resp = await fetch(apiUrl('/api/releases'));
         if (!resp.ok) {
           status.innerHTML = `<p style="color:red">Failed to check releases: ${resp.status}</p>`;
+          await updateButtons(false);
           return;
         }
         const { current, previous, releaseList } = await resp.json();
@@ -110,107 +94,171 @@
           status.innerHTML = `
             <p>Current release: <strong>${current}</strong></p>
             <p>Previous release: <strong>${previous}</strong></p>
-            <p style="color:green">Folders are ready for comparison.</p>
+            <p style="color:green">Releases are ready for comparison.</p>
           `;
+          await loadReports(undefined, true);
         } else {
           status.innerHTML = `
             <p style="color:red">Could not find at least two release folders.</p>
-            <p>Please download the RxNorm full release files for the two latest versions and copy the <code>rrf</code> folders into the <code>releases</code> directory.</p>
+            <p>Please download the UMLS Metathesaurus Full Subset for the two latest releases and copy the complete contents after unzipping into the <code>releases</code> folder.</p>
           `;
+          await updateButtons(false);
         }
       } catch (err) {
         status.innerHTML = `<p style="color:red">Error checking releases: ${err.message}</p>`;
+        await updateButtons(false);
       }
     }
     checkReleases();
 
-    async function loadSABSummary() {
-      try {
-        const resp = await fetch('/api/sab-diff');
-        if (!resp.ok) {
-          let msg = 'Report not available. Run preprocessing.';
-          try {
-            const data = await resp.json();
-            if (data.error) msg = data.error;
-          } catch {}
-          document.getElementById('sab-summary').innerHTML = `<p style="color:red">${msg}</p>`;
-          return;
-        }
-        const data = await resp.json();
-        const { summary, current, previous } = data;
-        if (!summary.length) return;
-        let html = `<h3>SAB/TTY Differences (${current} vs ${previous})</h3>`;
-        html += '<table><thead><tr><th>SAB</th><th>TTY</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th></tr></thead><tbody>';
-        for (const row of summary) {
-          const style = row.Difference < 0 ? ' style="color:red"' : '';
-          const pct = isFinite(row.Percent) ? row.Percent.toFixed(2) : 'inf';
-          html += `<tr><td>${row.SAB}</td><td>${row.TTY}</td><td>${row.Previous}</td><td>${row.Current}</td><td${style}>${row.Difference}</td><td>${pct}</td></tr>`;
-        }
-        html += '</tbody></table>';
-        document.getElementById('sab-summary').innerHTML = html;
-      } catch (err) {
-        document.getElementById('sab-summary').innerHTML = `<p style="color:red">Error loading report: ${err.message}</p>`;
-      }
-    }
-    loadSABSummary();
+    // Automatically check for finished reports when running preprocessing
 
-    document.getElementById('run-preprocess').addEventListener('click', () => {
+    function runReports(force = false) {
       const output = document.getElementById('preprocess-results');
-      output.innerHTML = '<p>Running preprocessing...</p>';
-      const es = new EventSource('/api/preprocess-stream');
+      const append = (text) => {
+        const pre = document.createElement('pre');
+        pre.textContent = text;
+        output.appendChild(pre);
+        pre.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        console.log(text);
+      };
+
+      output.innerHTML = '<p>Running reports...</p>';
+      const url = force ? apiUrl('/api/preprocess-stream?force=1') : apiUrl('/api/preprocess-stream');
+      const es = new EventSource(url);
       es.onmessage = (e) => {
-        output.insertAdjacentHTML('beforeend', `<pre>${e.data}</pre>`);
+        append(e.data);
+        if (e.data.includes('Generating MRCONSO report')) {
+          loadReports();
+          if (!reportInterval) reportInterval = setInterval(loadReports, 5000);
+        }
       };
       es.addEventListener('done', () => {
         es.close();
-        loadSABSummary();
+        clearInterval(reportInterval);
+        reportInterval = null;
+        append('Reports done.');
+        loadReports();
       });
       es.onerror = () => {
-        output.insertAdjacentHTML('beforeend', '<p style="color:red">Error running preprocessing.</p>');
+        append('Error running reports.');
         es.close();
+        clearInterval(reportInterval);
+        reportInterval = null;
       };
-    });
+    }
 
-    document.getElementById('compare-lines').addEventListener('click', async () => {
-      const results = document.getElementById('line-results');
-      results.innerHTML = '<p>Comparing...</p>';
+    window.runReports = runReports;
+
+    document.getElementById('run-preprocess').addEventListener('click', () => runReports(false));
+    document.getElementById('rerun-preprocess').addEventListener('click', () => runReports(true));
+
+    async function fileExists(url) {
       try {
-        const resp = await fetch('/api/line-count-diff');
-        if (!resp.ok) {
-          results.innerHTML = `<p style="color:red">Failed: ${resp.status}</p>`;
-          return;
-        }
-        const data = await resp.json();
-        const { current, previous, files } = data;
-        if (!files.length) {
-          results.innerHTML = '<p>No files found.</p>';
-          return;
-        }
-        let html = `<h3>Line Count Comparison (${current} vs ${previous})</h3>`;
-        html += '<table><thead><tr><th>File</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th><th>Report</th></tr></thead><tbody>';
-        const unchanged = [];
-        for (const f of files) {
-          const prev = f.previous ?? 0;
-          const cur = f.current ?? 0;
-          const diff = cur - prev;
-          const pct = isFinite(f.percent) ? f.percent.toFixed(2) : 'inf';
-          if (diff === 0) {
-            unchanged.push(f.name);
-            continue;
-          }
-          const decrease = diff < 0 ? ' style="color:red"' : '';
-          const linkCell = f.link ? `<a href="reports/${f.link}">view</a>` : '';
-          html += `<tr><td>${f.name}</td><td>${prev}</td><td>${cur}</td><td${decrease}>${diff}</td><td>${pct}</td><td>${linkCell}</td></tr>`;
-        }
-        html += '</tbody></table>';
-        if (unchanged.length) {
-          html += `<p>Unchanged files: ${unchanged.join(', ')}</p>`;
-        }
-        results.innerHTML = html;
-      } catch (err) {
-        results.innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
+        const resp = await fetch(url, { method: 'HEAD' });
+        return resp.ok;
+      } catch {
+        return false;
       }
+    }
+
+    async function updateButtons(hasReport) {
+      const runBtn = document.getElementById('run-preprocess');
+      const rerunBtn = document.getElementById('rerun-preprocess');
+      if (hasReport === undefined) {
+        hasReport = await fileExists('reports/line-count-diff.html');
+      }
+      if (hasReport) {
+        runBtn.style.display = 'none';
+        rerunBtn.style.display = '';
+      } else {
+        runBtn.style.display = '';
+        rerunBtn.style.display = 'none';
+      }
+    }
+
+    function updateUrl(report, replace = false) {
+      const url = new URL(window.location);
+      if (report && report !== 'line-count-diff.html') {
+        url.searchParams.set('report', encodeURIComponent(report));
+      } else {
+        url.searchParams.delete('report');
+      }
+
+      // Avoid pushing duplicate history entries when the URL hasn't changed
+      if (url.href === window.location.href) return;
+
+      if (replace) {
+        history.replaceState(null, '', url);
+      } else {
+        history.pushState(null, '', url);
+      }
+    }
+
+    function initialReport() {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get('report');
+      return raw ? decodeURIComponent(raw) : 'line-count-diff.html';
+    }
+
+    async function loadReports(file = initialReport(), replace = false) {
+      const results = document.getElementById('line-results');
+      results.innerHTML = '<p>Checking report...</p>';
+      const url = `reports/${file}`;
+      const exists = await fileExists(url);
+      if (!exists) {
+        results.innerHTML = '<p>No reports available.</p>';
+        await updateButtons(false);
+        return false;
+      }
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Failed to load');
+        let html = await resp.text();
+        const base = url.replace(/[^/]*$/, '');
+        html = html.replace(/<head>/i, `<head><base href="${base}">`);
+
+        const frame = document.createElement('iframe');
+        frame.id = 'report-frame';
+        frame.style.width = '100%';
+        frame.style.border = 'none';
+        frame.style.overflow = 'hidden';
+        frame.srcdoc = html;
+        results.innerHTML = '';
+        results.appendChild(frame);
+
+        let firstLoad = true;
+        const sync = () => {
+          try {
+            const doc = frame.contentWindow.document;
+            const p = frame.contentWindow.location.pathname.replace(/^\//, '');
+            if (p.startsWith('reports/')) updateUrl(p.slice('reports/'.length), firstLoad ? replace : false);
+            firstLoad = false;
+            doc.addEventListener('click', ev => {
+              if (ev.target.closest('a')) {
+                document.getElementById('line-results').scrollIntoView({ behavior: 'smooth' });
+              }
+            });
+            frame.style.height = doc.documentElement.scrollHeight + 'px';
+          } catch { }
+        };
+        frame.addEventListener('load', sync);
+
+        await updateButtons(true);
+        return true;
+      } catch {
+        results.innerHTML = '<p>Error loading report.</p>';
+        await updateButtons(false);
+        return false;
+      }
+    }
+
+    window.addEventListener('popstate', () => {
+      loadReports(initialReport(), true);
     });
   </script>
+  <script src="js/sortable.js"></script>
 </body>
+
 </html>
