@@ -3,13 +3,13 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>UMLS Release QA</title>
+  <title>RxNorm Release QA</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
   <div class="container">
-    <h1 id="page-title" class="editable">UMLS Release QA</h1>
+    <h1 id="page-title" class="editable">RxNorm Release QA</h1>
     <div id="status"></div>
     <p id="note1" class="editable note"></p>
     <button id="run-preprocess" class="editable">Run Reports</button>
@@ -41,8 +41,8 @@
         }
       } catch { }
       texts = texts || {};
-      document.title = texts.title || 'UMLS Release QA';
-      document.getElementById('page-title').textContent = texts.header || 'UMLS Release QA';
+      document.title = texts.title || 'RxNorm Release QA';
+      document.getElementById('page-title').textContent = texts.header || 'RxNorm Release QA';
       document.getElementById('run-preprocess').textContent = texts.runPreprocessButton || 'Run Reports';
       document.getElementById('rerun-preprocess').textContent = texts.rerunAllButton || 'Re-run All Reports';
       document.getElementById('note1').textContent = texts.note1 || '';
@@ -100,7 +100,7 @@
         } else {
           status.innerHTML = `
             <p style="color:red">Could not find at least two release folders.</p>
-            <p>Please download the UMLS Metathesaurus Full Subset for the two latest releases and copy the complete contents after unzipping into the <code>releases</code> folder.</p>
+            <p>Please download the RxNorm full releases and copy the complete contents after unzipping into the <code>releases</code> folder.</p>
           `;
           await updateButtons(false);
         }

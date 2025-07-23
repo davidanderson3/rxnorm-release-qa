@@ -1,6 +1,6 @@
-# UMLS Release QA
+# RxNorm Release QA
 
-This project generates HTML reports comparing two UMLS releases.
+This project generates HTML reports comparing two RxNorm releases.
 
 ## Prerequisites
 
