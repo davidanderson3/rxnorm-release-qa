@@ -203,12 +203,12 @@ app.get('/api/line-count-diff', async (req, res) => {
       const percent = prevCount === 0 || prevCount === null ? Infinity : (diff / prevCount * 100);
       let link = '';
       const base = path.basename(name);
-      if (/^MRCONSO\.RRF$/i.test(base)) link = 'MRCONSO_report.html';
-      else if (/^MRSTY\.RRF$/i.test(base)) link = 'MRSTY_report.html';
-      else if (/^MRSAB\.RRF$/i.test(base)) link = 'MRSAB_report.html';
-      else if (/^MRDEF\.RRF$/i.test(base)) link = 'MRDEF_report.html';
-      else if (/^MRREL\.RRF$/i.test(base)) link = 'MRREL_report.html';
-      else if (/^MRSAT\.RRF$/i.test(base)) link = 'MRSAT_report.html';
+      if (/^RXNCONSO\.RRF$/i.test(base)) link = 'RXNCONSO_report.html';
+      else if (/^RXNSTY\.RRF$/i.test(base)) link = 'RXNSTY_report.html';
+      else if (/^RXNSAB\.RRF$/i.test(base)) link = 'RXNSAB_report.html';
+      else if (/^RXNDOC\.RRF$/i.test(base)) link = 'RXNDOC_report.html';
+      else if (/^RXNREL\.RRF$/i.test(base)) link = 'RXNREL_report.html';
+      else if (/^RXNSAT\.RRF$/i.test(base)) link = 'RXNSAT_report.html';
       result.push({ name, current: curCount, previous: prevCount, diff, percent, link });
     }
   } catch (err) {
@@ -226,7 +226,7 @@ app.get('/api/sab-diff', async (req, res) => {
     return;
   }
 
-  const precomputed = path.join(reportsDir, 'MRCONSO_report.json');
+  const precomputed = path.join(reportsDir, 'RXNCONSO_report.json');
   try {
     const data = await fsp.readFile(precomputed, 'utf-8');
     res.setHeader('Content-Type', 'application/json');

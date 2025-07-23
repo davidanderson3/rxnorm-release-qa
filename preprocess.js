@@ -73,12 +73,12 @@ async function generateLineCountDiff(current, previous) {
     const percent = prev === 0 || prev === null ? Infinity : (diff / prev * 100);
     let link = '';
     const base = path.basename(name);
-    if (/^MRCONSO\.RRF$/i.test(base)) link = 'MRCONSO_report.html';
-    else if (/^MRSTY\.RRF$/i.test(base)) link = 'MRSTY_report.html';
-    else if (/^MRSAB\.RRF$/i.test(base)) link = 'MRSAB_report.html';
-    else if (/^MRDEF\.RRF$/i.test(base)) link = 'MRDEF_report.html';
-    else if (/^MRREL\.RRF$/i.test(base)) link = 'MRREL_report.html';
-    else if (/^MRSAT\.RRF$/i.test(base)) link = 'MRSAT_report.html';
+    if (/^RXNCONSO\.RRF$/i.test(base)) link = 'RXNCONSO_report.html';
+    else if (/^RXNSTY\.RRF$/i.test(base)) link = 'RXNSTY_report.html';
+    else if (/^RXNSAB\.RRF$/i.test(base)) link = 'RXNSAB_report.html';
+    else if (/^RXNDOC\.RRF$/i.test(base)) link = 'RXNDOC_report.html';
+    else if (/^RXNREL\.RRF$/i.test(base)) link = 'RXNREL_report.html';
+    else if (/^RXNSAT\.RRF$/i.test(base)) link = 'RXNSAT_report.html';
     result.push({ name, current: cur, previous: prev, diff, percent, link });
   }
 
@@ -107,7 +107,7 @@ function escapeHTML(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-async function readCountsMRCONSO(file) {
+async function readCountsRXNCONSO(file) {
   const counts = new Map();
   try {
     const rl = readline.createInterface({ input: fs.createReadStream(file) });
@@ -224,10 +224,10 @@ function buildDiffData(sab, tty, baseRows, prevRows) {
 }
 
 async function generateSABDiff(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'rrf', 'MRCONSO.RRF');
-  const previousFile = path.join(releasesDir, previous, 'rrf', 'MRCONSO.RRF');
-  const baseCounts = await readCountsMRCONSO(currentFile);
-  const prevCounts = await readCountsMRCONSO(previousFile);
+  const currentFile = path.join(releasesDir, current, 'rrf', 'RXNCONSO.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'RXNCONSO.RRF');
+  const baseCounts = await readCountsRXNCONSO(currentFile);
+  const prevCounts = await readCountsRXNCONSO(previousFile);
 
   await fsp.mkdir(diffsDir, { recursive: true });
   const summary = [];
@@ -262,10 +262,10 @@ async function generateSABDiff(current, previous) {
     }
   }
 
-  const summaryPath = path.join(reportsDir, 'MRCONSO_report.json');
+  const summaryPath = path.join(reportsDir, 'RXNCONSO_report.json');
   await fsp.writeFile(summaryPath, JSON.stringify({ current, previous, summary }, null, 2));
 
-  let html = `<h3>MRCONSO SAB/TTY Differences (${current} vs ${previous})</h3>`;
+  let html = `<h3>RXNCONSO SAB/TTY Differences (${current} vs ${previous})</h3>`;
   html += '<table><thead><tr><th>SAB</th><th>TTY</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th><th>Diff</th></tr></thead><tbody>';
   for (const row of summary) {
     const style = row.Difference < 0 ? ' style="color:red"' : '';
@@ -274,7 +274,7 @@ async function generateSABDiff(current, previous) {
     html += `<tr><td>${row.SAB}</td><td>${row.TTY}</td><td>${row.Previous}</td><td>${row.Current}</td><td${style}>${row.Difference}</td><td>${pct}</td><td>${linkCell}</td></tr>`;
   }
   html += '</tbody></table>';
-  await fsp.writeFile(path.join(reportsDir, 'MRCONSO_report.html'), html);
+  await fsp.writeFile(path.join(reportsDir, 'RXNCONSO_report.html'), html);
 }
 
 async function generateCountReport(current, previous, fileName, indices, tableName) {
@@ -317,11 +317,11 @@ async function generateCountReport(current, previous, fileName, indices, tableNa
   console.log('Generating SAB/TTY differences...');
   await generateSABDiff(current, previous);
   console.log('Generating additional table reports...');
-  await generateCountReport(current, previous, 'MRSTY.RRF', [3], 'MRSTY');
-  await generateCountReport(current, previous, 'MRSAB.RRF', [3], 'MRSAB');
-  await generateCountReport(current, previous, 'MRDEF.RRF', [4], 'MRDEF');
-  await generateCountReport(current, previous, 'MRREL.RRF', [3], 'MRREL');
-  await generateCountReport(current, previous, 'MRSAT.RRF', [9], 'MRSAT');
+  await generateCountReport(current, previous, 'RXNSTY.RRF', [3], 'RXNSTY');
+  await generateCountReport(current, previous, 'RXNSAB.RRF', [3], 'RXNSAB');
+  await generateCountReport(current, previous, 'RXNDOC.RRF', [2], 'RXNDOC');
+  await generateCountReport(current, previous, 'RXNREL.RRF', [3], 'RXNREL');
+  await generateCountReport(current, previous, 'RXNSAT.RRF', [9], 'RXNSAT');
   console.log('Reports generated in', reportsDir);
 })();
 
