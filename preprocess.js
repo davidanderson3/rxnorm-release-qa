@@ -1255,7 +1255,7 @@ async function generateRXNRELReport(current, previous) {
     const pct = previousCount === 0 ? Infinity : (diff / previousCount * 100);
     const [sab, rel, rela] = key.split('|');
     const entry = { SAB: sab, REL: rel, RELA: rela, Previous: previousCount, Current: currentCount, Difference: diff, Percent: pct, link: '' };
-    if (Math.abs(pct) >= 5) diffKeys.push(key);
+    if (diff < 0 || pct >= 5) diffKeys.push(key);
     summary.push(entry);
   }
 
@@ -1331,9 +1331,9 @@ async function generateRXNRELReport(current, previous) {
   await fsp.writeFile(jsonPath, JSON.stringify({ current, previous, summary }, null, 2));
 
   let html = '';
-  const changed = summary.filter(r => Math.abs(r.Percent) >= 5);
+  const changed = summary.filter(r => r.Difference < 0 || r.Percent >= 5);
   if (changed.length) {
-    html += '<h4>Entries with a change of at least 5% (increase or decrease)</h4>';
+    html += '<h4>Entries that decreased or increased by at least 5%</h4>';
     html += '<table><thead><tr><th>SAB</th><th>REL</th><th>RELA</th><th>Prev</th><th>Curr</th><th>%</th><th>Diff</th></tr></thead><tbody>';
     for (const row of changed) {
       const pctTxt = isFinite(row.Percent) ? row.Percent.toFixed(2) : 'inf';
