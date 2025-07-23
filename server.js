@@ -7,8 +7,8 @@ const fsp = fs.promises;
 const baseReportsDir = path.join(__dirname, 'reports');
 const textsFile = path.join(__dirname, 'texts.json');
 const defaultTexts = {
-  title: 'UMLS Release QA',
-  header: 'UMLS Release QA',
+  title: 'RxNorm Release QA',
+  header: 'RxNorm Release QA',
   runPreprocessButton: 'Run Reports',
   rerunAllButton: 'Re-run All Reports',
   note1: '',
@@ -75,12 +75,12 @@ app.get('/:release', async (req, res, next) => {
   next();
 });
 app.use(express.static(path.join(__dirname)));
-// Dynamically generate the MRCONSO report HTML from the JSON summary so we can
+// Dynamically generate the RXNCONSO report HTML from the JSON summary so we can
 // control ordering without modifying the preprocessing step.
-app.get(['/reports/MRCONSO_report.html', '/:release/reports/MRCONSO_report.html'], async (req, res, next) => {
+app.get(['/reports/RXNCONSO_report.html', '/:release/reports/RXNCONSO_report.html'], async (req, res, next) => {
   try {
     const reportsDir = await getReportsDir(req.params.release);
-    const jsonPath = path.join(reportsDir, 'MRCONSO_report.json');
+    const jsonPath = path.join(reportsDir, 'RXNCONSO_report.json');
     const data = JSON.parse(await fsp.readFile(jsonPath, 'utf-8'));
     const summary = Array.isArray(data.summary) ? data.summary.slice() : [];
     // Sort by SAB then TTY
@@ -90,7 +90,7 @@ app.get(['/reports/MRCONSO_report.html', '/:release/reports/MRCONSO_report.html'
     });
     const notable = summary.filter(r => r.include);
 
-    let html = `<h3>MRCONSO SAB/TTY Differences (${data.current} vs ${data.previous})</h3>`;
+    let html = `<h3>RXNCONSO SAB/TTY Differences (${data.current} vs ${data.previous})</h3>`;
     if (notable.length) {
       html += '<h4>Notable Changes (any decrease, increase over 5%, or SAB=SRC)</h4>';
       html += '<table style="border:1px solid #ccc;border-collapse:collapse"><thead><tr><th>SAB</th><th>TTY</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th><th>Diff</th></tr></thead><tbody>';
@@ -113,7 +113,7 @@ app.get(['/reports/MRCONSO_report.html', '/:release/reports/MRCONSO_report.html'
     }
     html += '</tbody></table>';
 
-    res.send(wrapHtml('MRCONSO Report', html, 'MRCONSO'));
+    res.send(wrapHtml('RXNCONSO Report', html, 'RXNCONSO'));
   } catch (err) {
     next();
   }
@@ -152,7 +152,7 @@ async function detectReleases(selected) {
         const stat = await fsp.stat(full);
         if (stat.isDirectory()) {
           const subEntries = await fsp.readdir(full);
-          if (subEntries.some(d => d.toLowerCase() === 'meta')) {
+          if (subEntries.some(d => d.toLowerCase() === 'rrf')) {
             releaseList.push(entry);
           }
         }
@@ -436,8 +436,8 @@ app.get('/api/line-count-diff', async (req, res) => {
     return;
   } catch {}
 
-  const currentMeta = path.join(releasesDir, current, 'META');
-  const previousMeta = path.join(releasesDir, previous, 'META');
+  const currentMeta = path.join(releasesDir, current, 'rrf');
+  const previousMeta = path.join(releasesDir, previous, 'rrf');
   const result = [];
 
   try {
@@ -453,17 +453,12 @@ app.get('/api/line-count-diff', async (req, res) => {
       const percent = prevCount === 0 || prevCount === null ? Infinity : (diff / prevCount * 100);
       let link = '';
       const base = path.basename(name);
-      if (/^MRCONSO\.RRF$/i.test(base)) link = 'MRCONSO_report.html';
-      else if (/^MRSTY\.RRF$/i.test(base)) link = 'MRSTY_report.html';
-      else if (/^MRSAB\.RRF$/i.test(base)) link = 'MRSAB_report.html';
-      else if (/^MRDEF\.RRF$/i.test(base)) link = 'MRDEF_report.html';
-      else if (/^MRREL\.RRF$/i.test(base)) link = 'MRREL_report.html';
-      else if (/^MRSAT\.RRF$/i.test(base)) link = 'MRSAT_report.html';
-      else if (/^MRHIER\.RRF$/i.test(base)) link = 'MRHIER_report.html';
-      else if (/^MRDOC\.RRF$/i.test(base)) link = 'MRDOC_report.html';
-      else if (/^MRCOLS\.RRF$/i.test(base)) link = 'MRCOLS_report.html';
-      else if (/^MRFILES\.RRF$/i.test(base)) link = 'MRFILES_report.html';
-      else if (/^MRRANK\.RRF$/i.test(base)) link = 'MRRANK_report.html';
+      if (/^RXNCONSO\.RRF$/i.test(base)) link = 'RXNCONSO_report.html';
+      else if (/^RXNSTY\.RRF$/i.test(base)) link = 'RXNSTY_report.html';
+      else if (/^RXNSAB\.RRF$/i.test(base)) link = 'RXNSAB_report.html';
+      else if (/^RXNREL\.RRF$/i.test(base)) link = 'RXNREL_report.html';
+      else if (/^RXNSAT\.RRF$/i.test(base)) link = 'RXNSAT_report.html';
+      else if (/^RXNDOC\.RRF$/i.test(base)) link = 'RXNDOC_report.html';
       let status = 'n/a';
       if (link) {
         try {
@@ -552,7 +547,7 @@ app.get('/api/sab-diff', async (req, res) => {
     return;
   }
 
-  const precomputed = path.join(reportsDir, 'MRCONSO_report.json');
+  const precomputed = path.join(reportsDir, 'RXNCONSO_report.json');
   try {
     const data = await fsp.readFile(precomputed, 'utf-8');
     res.setHeader('Content-Type', 'application/json');

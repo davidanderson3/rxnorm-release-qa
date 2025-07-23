@@ -141,7 +141,7 @@ async function detectReleases() {
         const stat = await fsp.stat(full);
         if (stat.isDirectory()) {
           const subEntries = await fsp.readdir(full);
-          if (subEntries.some(d => d.toLowerCase() === 'meta')) {
+          if (subEntries.some(d => d.toLowerCase() === 'rrf')) {
             releaseList.push(entry);
           }
         }
@@ -194,8 +194,8 @@ async function listFiles(dir, base = dir) {
 }
 
 async function generateLineCountDiff(current, previous) {
-  const currentMeta = path.join(releasesDir, current, 'META');
-  const previousMeta = path.join(releasesDir, previous, 'META');
+  const currentMeta = path.join(releasesDir, current, 'rrf');
+  const previousMeta = path.join(releasesDir, previous, 'rrf');
   const result = [];
   const currFiles = await listFiles(currentMeta).catch(() => []);
   const prevFiles = await listFiles(previousMeta).catch(() => []);
@@ -209,17 +209,12 @@ async function generateLineCountDiff(current, previous) {
     const percent = prev === 0 || prev === null ? Infinity : (diff / prev * 100);
     let link = '';
     const base = path.basename(name);
-    if (/^MRCONSO\.RRF$/i.test(base)) link = 'MRCONSO_report.html';
-    else if (/^MRSTY\.RRF$/i.test(base)) link = 'MRSTY_report.html';
-    else if (/^MRSAB\.RRF$/i.test(base)) link = 'MRSAB_report.html';
-    else if (/^MRDEF\.RRF$/i.test(base)) link = 'MRDEF_report.html';
-    else if (/^MRREL\.RRF$/i.test(base)) link = 'MRREL_report.html';
-    else if (/^MRSAT\.RRF$/i.test(base)) link = 'MRSAT_report.html';
-    else if (/^MRHIER\.RRF$/i.test(base)) link = 'MRHIER_report.html';
-    else if (/^MRDOC\.RRF$/i.test(base)) link = 'MRDOC_report.html';
-    else if (/^MRCOLS\.RRF$/i.test(base)) link = 'MRCOLS_report.html';
-    else if (/^MRFILES\.RRF$/i.test(base)) link = 'MRFILES_report.html';
-    else if (/^MRRANK\.RRF$/i.test(base)) link = 'MRRANK_report.html';
+    if (/^RXNCONSO\.RRF$/i.test(base)) link = 'RXNCONSO_report.html';
+    else if (/^RXNSTY\.RRF$/i.test(base)) link = 'RXNSTY_report.html';
+    else if (/^RXNSAB\.RRF$/i.test(base)) link = 'RXNSAB_report.html';
+    else if (/^RXNREL\.RRF$/i.test(base)) link = 'RXNREL_report.html';
+    else if (/^RXNSAT\.RRF$/i.test(base)) link = 'RXNSAT_report.html';
+    else if (/^RXNDOC\.RRF$/i.test(base)) link = 'RXNDOC_report.html';
     result.push({ name, current: cur, previous: prev, diff, percent, link });
   }
 
@@ -349,7 +344,7 @@ function rowsToDiffTable(added, removed) {
   return html;
 }
 
-async function readCountsMRCONSO(file) {
+async function readCountsRXNCONSO(file) {
   const counts = new Map();
   try {
     const rl = readline.createInterface({ input: fs.createReadStream(file) });
@@ -522,9 +517,9 @@ function diffDataToHtml(data) {
   return wrapDiffHtml(
     `${data.sab} ${data.tty} Differences`,
     html,
-    'MRCONSO Report',
-    '../MRCONSO_report.html',
-    'MRCONSO'
+    'RXNCONSO Report',
+    '../RXNCONSO_report.html',
+    'RXNCONSO'
   );
 }
 
@@ -555,17 +550,17 @@ function stySabDiffToHtml(data) {
   return wrapDiffHtml(
     `${data.sty} ${data.sab} Changes`,
     html,
-    'MRSTY Report',
-    '../MRSTY_report.html',
-    'MRSTY'
+    'RXNSTY Report',
+    '../RXNSTY_report.html',
+    'RXNSTY'
   );
 }
 
 async function generateSABDiff(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'META', 'MRCONSO.RRF');
-  const previousFile = path.join(releasesDir, previous, 'META', 'MRCONSO.RRF');
-  const baseCounts = await readCountsMRCONSO(currentFile);
-  const prevCounts = await readCountsMRCONSO(previousFile);
+  const currentFile = path.join(releasesDir, current, 'rrf', 'RXNCONSO.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'RXNCONSO.RRF');
+  const baseCounts = await readCountsRXNCONSO(currentFile);
+  const prevCounts = await readCountsRXNCONSO(previousFile);
 
   await fsp.mkdir(diffsDir, { recursive: true });
   const summary = [];
@@ -589,7 +584,7 @@ async function generateSABDiff(current, previous) {
   });
 
   // Gather rows for all selected SAB/TTY pairs in a single pass to avoid
-  // repeatedly scanning the large MRCONSO files.
+  // repeatedly scanning the large RXNCONSO files.
   if (detailKeys.size) {
     const baseRowsMap = await gatherRows(currentFile, detailKeys);
     const prevRowsMap = await gatherRows(previousFile, detailKeys);
@@ -613,11 +608,11 @@ async function generateSABDiff(current, previous) {
     }
   }
 
-  const summaryPath = path.join(reportsDir, 'MRCONSO_report.json');
+  const summaryPath = path.join(reportsDir, 'RXNCONSO_report.json');
   await fsp.writeFile(summaryPath, JSON.stringify({ current, previous, summary }, null, 2));
 
   const notable = summary.filter(r => r.include);
-  let html = `<h3>MRCONSO SAB/TTY Differences (${current} vs ${previous})</h3>`;
+  let html = `<h3>RXNCONSO SAB/TTY Differences (${current} vs ${previous})</h3>`;
   if (notable.length) {
     html += '<h4>Notable Changes (any decrease, increase over 5%, or SAB=SRC)</h4>';
     html += '<table style="border:1px solid #ccc;border-collapse:collapse"><thead><tr><th>SAB</th><th>TTY</th><th>Previous</th><th>Current</th><th>Change</th><th>%</th><th>Diff</th></tr></thead><tbody>';
@@ -639,9 +634,9 @@ async function generateSABDiff(current, previous) {
     html += `<tr><td>${row.SAB}</td><td>${row.TTY}</td><td>${row.Previous}</td><td>${row.Current}</td><td class="${diffClass}">${row.Difference}</td><td>${pct}</td><td>${linkCell}</td></tr>`;
   }
   html += '</tbody></table>';
-  const wrapped = wrapHtml('MRCONSO Report', html, 'MRCONSO');
+  const wrapped = wrapHtml('RXNCONSO Report', html, 'RXNCONSO');
   if (generateHtml) {
-    await fsp.writeFile(path.join(reportsDir, 'MRCONSO_report.html'), wrapped);
+    await fsp.writeFile(path.join(reportsDir, 'RXNCONSO_report.html'), wrapped);
   }
 }
 
@@ -683,7 +678,7 @@ async function readCUISABMap(file) {
   return map;
 }
 
-// Collect preferred names for a set of CUIs from MRCONSO
+// Collect preferred names for a set of CUIs from RXNCONSO
 // Only rows with TS=P, STT=PF, and ISPREF=Y are considered
 async function collectPreferredNames(file, cuis) {
   const names = new Map();
@@ -769,11 +764,11 @@ function sanitizeComponent(str) {
 }
 
 async function generateSTYReports(current, previous, reportConfig = {}) {
-  console.log('  Reading MRSTY/MRCONSO files...');
-  const styCurFile = path.join(releasesDir, current, 'META', 'MRSTY.RRF');
-  const styPrevFile = path.join(releasesDir, previous, 'META', 'MRSTY.RRF');
-  const consoCurFile = path.join(releasesDir, current, 'META', 'MRCONSO.RRF');
-  const consoPrevFile = path.join(releasesDir, previous, 'META', 'MRCONSO.RRF');
+  console.log('  Reading RXNSTY/RXNCONSO files...');
+  const styCurFile = path.join(releasesDir, current, 'rrf', 'RXNSTY.RRF');
+  const styPrevFile = path.join(releasesDir, previous, 'rrf', 'RXNSTY.RRF');
+  const consoCurFile = path.join(releasesDir, current, 'rrf', 'RXNCONSO.RRF');
+  const consoPrevFile = path.join(releasesDir, previous, 'rrf', 'RXNCONSO.RRF');
 
   const styCurMap = await readSTYMap(styCurFile);
   const styPrevMap = await readSTYMap(styPrevFile);
@@ -876,9 +871,9 @@ async function generateSTYReports(current, previous, reportConfig = {}) {
             wrapDiffHtml(
               `${sty} by SAB`,
               html,
-              'MRSTY Report',
-              '../MRSTY_report.html',
-              'MRSTY'
+              'RXNSTY Report',
+              '../RXNSTY_report.html',
+              'RXNSTY'
             )
           );
         }
@@ -912,7 +907,7 @@ async function generateSTYReports(current, previous, reportConfig = {}) {
     }
   }
 
-  const summaryPath = path.join(reportsDir, 'MRSTY_report.json');
+  const summaryPath = path.join(reportsDir, 'RXNSTY_report.json');
   await fsp.writeFile(summaryPath, JSON.stringify({ current, previous, summary }, null, 2));
 
   let html = '';
@@ -938,15 +933,15 @@ async function generateSTYReports(current, previous, reportConfig = {}) {
   }
   html += '</tbody></table>';
   if (generateHtml) {
-      const title = `MRSTY Report (${current} vs ${previous})`;
-      await fsp.writeFile(path.join(reportsDir, 'MRSTY_report.html'), wrapHtml(title, html, 'MRSTY'));
+      const title = `RXNSTY Report (${current} vs ${previous})`;
+      await fsp.writeFile(path.join(reportsDir, 'RXNSTY_report.html'), wrapHtml(title, html, 'RXNSTY'));
   }
   console.log('  STY reports complete.');
 }
 
 async function generateCountReport(current, previous, fileName, indices, tableName) {
-  const currentFile = path.join(releasesDir, current, 'META', fileName);
-  const previousFile = path.join(releasesDir, previous, 'META', fileName);
+  const currentFile = path.join(releasesDir, current, 'rrf', fileName);
+  const previousFile = path.join(releasesDir, previous, 'rrf', fileName);
   const baseCounts = await readCountsByIndices(currentFile, indices);
   const prevCounts = await readCountsByIndices(previousFile, indices);
   const summary = [];
@@ -1007,9 +1002,9 @@ async function collectRSABGroups(file) {
   return { withVcui, withoutVcui };
 }
 
-async function generateMRSABChangeReport(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'META', 'MRSAB.RRF');
-  const previousFile = path.join(releasesDir, previous, 'META', 'MRSAB.RRF');
+async function generateRXNSABChangeReport(current, previous) {
+  const currentFile = path.join(releasesDir, current, 'rrf', 'RXNSAB.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'RXNSAB.RRF');
 
   const cur = await collectRSABGroups(currentFile);
   const prev = await collectRSABGroups(previousFile);
@@ -1031,11 +1026,11 @@ async function generateMRSABChangeReport(current, previous) {
     vcuiNull: { added: addedNoVcuiLines, dropped: droppedNoVcuiLines }
   };
   await fsp.writeFile(
-    path.join(reportsDir, 'MRSAB_report.json'),
+    path.join(reportsDir, 'RXNSAB_report.json'),
     JSON.stringify(jsonData, null, 2)
   );
 
-  let html = `<h3>MRSAB RSAB Changes (${current} vs ${previous})</h3>`;
+  let html = `<h3>RXNSAB RSAB Changes (${current} vs ${previous})</h3>`;
   html += '<h4>VCUI not null</h4>';
   if (addedVcuiLines.length) {
     html += `<p>Added rows (${addedVcuiLines.length})</p>`;
@@ -1068,18 +1063,18 @@ async function generateMRSABChangeReport(current, previous) {
     !addedNoVcuiLines.length &&
     !droppedNoVcuiLines.length
   ) {
-    html += '<p>No MRSAB changes.</p>';
+    html += '<p>No RXNSAB changes.</p>';
   }
 
-  const wrapped = wrapHtml('MRSAB Report', html, 'MRSAB');
+  const wrapped = wrapHtml('RXNSAB Report', html, 'RXNSAB');
   if (generateHtml) {
-    await fsp.writeFile(path.join(reportsDir, 'MRSAB_report.html'), wrapped);
+    await fsp.writeFile(path.join(reportsDir, 'RXNSAB_report.html'), wrapped);
   }
 }
 
-async function generateMRSATReport(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'META', 'MRSAT.RRF');
-  const previousFile = path.join(releasesDir, previous, 'META', 'MRSAT.RRF');
+async function generateRXNSATReport(current, previous) {
+  const currentFile = path.join(releasesDir, current, 'rrf', 'RXNSAT.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'RXNSAT.RRF');
   const curCounts = await readCountsByIndices(currentFile, [9, 8]);
   const prevCounts = await readCountsByIndices(previousFile, [9, 8]);
   const summary = [];
@@ -1105,7 +1100,7 @@ async function generateMRSATReport(current, previous) {
     return a.ATN.localeCompare(b.ATN);
   });
 
-  const jsonPath = path.join(reportsDir, 'MRSAT_report.json');
+  const jsonPath = path.join(reportsDir, 'RXNSAT_report.json');
   await fsp.writeFile(jsonPath, JSON.stringify({ current, previous, summary }, null, 2));
 
   let html = '';
@@ -1129,16 +1124,16 @@ async function generateMRSATReport(current, previous) {
     html += `<tr><td>${escapeHTML(row.SAB)}</td><td>${escapeHTML(row.ATN)}</td><td>${row.Previous}</td><td>${row.Current}</td><td class="${diffClass}">${row.Difference}</td><td>${pctTxt}</td></tr>`;
   }
   html += '</tbody></table>';
-  const title = `MRSAT Report (${current} vs ${previous})`;
-  const wrapped = wrapHtml(title, html, 'MRSAT');
+  const title = `RXNSAT Report (${current} vs ${previous})`;
+  const wrapped = wrapHtml(title, html, 'RXNSAT');
   if (generateHtml) {
-    await fsp.writeFile(path.join(reportsDir, 'MRSAT_report.html'), wrapped);
+    await fsp.writeFile(path.join(reportsDir, 'RXNSAT_report.html'), wrapped);
   }
 }
 
-// Gather rows for a set of SAB|REL|RELA keys in MRREL
+// Gather rows for a set of SAB|REL|RELA keys in RXNREL
 // Returns a Map from key -> array of row objects
-async function gatherMRRELRows(file, keys) {
+async function gatherRXNRELRows(file, keys) {
   const rowsMap = new Map();
   for (const k of keys) rowsMap.set(k, []);
   try {
@@ -1193,7 +1188,7 @@ async function collectConsoNames(file, auis, cuis) {
   return { byAUI, byCUI };
 }
 
-function buildMRRELDiffData(key, baseRows, prevRows) {
+function buildRXNRELDiffData(key, baseRows, prevRows) {
   const [sab, rel, rela] = key.split('|');
   const baseMap = new Map(baseRows.map(r => [r.RUI, r]));
   const prevMap = new Map(prevRows.map(r => [r.RUI, r]));
@@ -1238,15 +1233,15 @@ function mrrelDiffToHtml(data) {
   return wrapDiffHtml(
     `${data.sab} ${data.rel} ${data.rela} Differences`,
     html,
-    'MRREL Report',
-    '../MRREL_report.html',
-    'MRREL'
+    'RXNREL Report',
+    '../RXNREL_report.html',
+    'RXNREL'
   );
 }
 
-async function generateMRRELReport(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'META', 'MRREL.RRF');
-  const previousFile = path.join(releasesDir, previous, 'META', 'MRREL.RRF');
+async function generateRXNRELReport(current, previous) {
+  const currentFile = path.join(releasesDir, current, 'rrf', 'RXNREL.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'RXNREL.RRF');
   const baseCounts = await readCountsByIndices(currentFile, [10, 3, 7]);
   const prevCounts = await readCountsByIndices(previousFile, [10, 3, 7]);
   await fsp.mkdir(diffsDir, { recursive: true });
@@ -1271,8 +1266,8 @@ async function generateMRRELReport(current, previous) {
   });
 
   if (diffKeys.length) {
-    const baseRowsMap = await gatherMRRELRows(currentFile, diffKeys);
-    const prevRowsMap = await gatherMRRELRows(previousFile, diffKeys);
+    const baseRowsMap = await gatherRXNRELRows(currentFile, diffKeys);
+    const prevRowsMap = await gatherRXNRELRows(previousFile, diffKeys);
 
     const allCurAUIs = new Set();
     const allCurCUIs = new Set();
@@ -1285,7 +1280,7 @@ async function generateMRRELReport(current, previous) {
       if (!diffKeys.includes(key)) continue;
       const baseRows = baseRowsMap.get(key) || [];
       const prevRows = prevRowsMap.get(key) || [];
-      const diffData = buildMRRELDiffData(key, baseRows, prevRows);
+      const diffData = buildRXNRELDiffData(key, baseRows, prevRows);
       if (!diffData) continue;
 
       for (const r of diffData.added) {
@@ -1302,12 +1297,12 @@ async function generateMRRELReport(current, previous) {
     }
 
     const curNames = await collectConsoNames(
-      path.join(releasesDir, current, 'META', 'MRCONSO.RRF'),
+      path.join(releasesDir, current, 'rrf', 'RXNCONSO.RRF'),
       allCurAUIs,
       allCurCUIs
     );
     const prevNames = await collectConsoNames(
-      path.join(releasesDir, previous, 'META', 'MRCONSO.RRF'),
+      path.join(releasesDir, previous, 'rrf', 'RXNCONSO.RRF'),
       allPrevAUIs,
       allPrevCUIs
     );
@@ -1322,7 +1317,7 @@ async function generateMRRELReport(current, previous) {
         r.STR2 = prevNames.byAUI.get(r.AUI2) || prevNames.byCUI.get(r.CUI2) || '';
       }
 
-      const fileName = `MRREL_${safe}_diff.json`;
+      const fileName = `RXNREL_${safe}_diff.json`;
       await fsp.writeFile(path.join(diffsDir, fileName), JSON.stringify(diffData, null, 2));
       if (generateHtml) {
         const htmlName = fileName.replace(/\.json$/, '.html');
@@ -1332,7 +1327,7 @@ async function generateMRRELReport(current, previous) {
     }
   }
 
-  const jsonPath = path.join(reportsDir, 'MRREL_report.json');
+  const jsonPath = path.join(reportsDir, 'RXNREL_report.json');
   await fsp.writeFile(jsonPath, JSON.stringify({ current, previous, summary }, null, 2));
 
   let html = '';
@@ -1358,26 +1353,26 @@ async function generateMRRELReport(current, previous) {
     html += `<tr><td>${escapeHTML(row.SAB)}</td><td>${escapeHTML(row.REL)}</td><td>${escapeHTML(row.RELA)}</td><td>${row.Previous}</td><td>${row.Current}</td><td class="${diffClass}">${row.Difference}</td><td>${pctTxt}</td><td>${linkCell}</td></tr>`;
   }
   html += '</tbody></table>';
-  const title = `MRREL Report (${current} vs ${previous})`;
-  const wrapped = wrapHtml(title, html, 'MRREL');
+  const title = `RXNREL Report (${current} vs ${previous})`;
+  const wrapped = wrapHtml(title, html, 'RXNREL');
   if (generateHtml) {
-    await fsp.writeFile(path.join(reportsDir, 'MRREL_report.html'), wrapped);
+    await fsp.writeFile(path.join(reportsDir, 'RXNREL_report.html'), wrapped);
   }
 }
 
-async function generateMRDOCReport(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'META', 'MRDOC.RRF');
-  const previousFile = path.join(releasesDir, previous, 'META', 'MRDOC.RRF');
+async function generateRXNDOCReport(current, previous) {
+  const currentFile = path.join(releasesDir, current, 'rrf', 'RXNDOC.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'RXNDOC.RRF');
   const curLines = await readAllLines(currentFile);
   const prevLines = await readAllLines(previousFile);
   const curSet = new Set(curLines);
   const prevSet = new Set(prevLines);
   const added = curLines.filter(l => !prevSet.has(l));
   const removed = prevLines.filter(l => !curSet.has(l));
-  const jsonPath = path.join(reportsDir, 'MRDOC_report.json');
+  const jsonPath = path.join(reportsDir, 'RXNDOC_report.json');
   await fsp.writeFile(jsonPath, JSON.stringify({ current, previous, added, removed }, null, 2));
 
-  let html = `<h3>MRDOC Differences (${current} vs ${previous})</h3>`;
+  let html = `<h3>RXNDOC Differences (${current} vs ${previous})</h3>`;
   if (!added.length && !removed.length) {
     html += '<p>No differences found.</p>';
   } else {
@@ -1391,13 +1386,13 @@ async function generateMRDOCReport(current, previous) {
     }
   }
   if (generateHtml) {
-    await fsp.writeFile(path.join(reportsDir, 'MRDOC_report.html'), wrapHtml('MRDOC Report', html, 'MRDOC'));
+    await fsp.writeFile(path.join(reportsDir, 'RXNDOC_report.html'), wrapHtml('RXNDOC Report', html, 'RXNDOC'));
   }
 }
 
 async function generateMRCOLSReport(current, previous) {
-  const currentFile = path.join(releasesDir, current, 'META', 'MRCOLS.RRF');
-  const previousFile = path.join(releasesDir, previous, 'META', 'MRCOLS.RRF');
+  const currentFile = path.join(releasesDir, current, 'rrf', 'MRCOLS.RRF');
+  const previousFile = path.join(releasesDir, previous, 'rrf', 'MRCOLS.RRF');
   const curMap = await readLineMapByIndices(currentFile, [0, 1, 6]);
   const prevMap = await readLineMapByIndices(previousFile, [0, 1, 6]);
   const curKeys = Array.from(curMap.keys());
@@ -1456,7 +1451,7 @@ async function generateMRCOLSReport(current, previous) {
 }
 
 async function collectMRFILESizes(release) {
-  const file = path.join(releasesDir, release, 'META', 'MRFILES.RRF');
+  const file = path.join(releasesDir, release, 'rrf', 'MRFILES.RRF');
   const lines = await readAllLines(file);
   const result = new Map();
   for (const line of lines) {
@@ -1465,7 +1460,7 @@ async function collectMRFILESizes(release) {
     if (!fname) continue;
     const possible = [
       path.join(releasesDir, release, fname),
-      path.join(releasesDir, release, 'META', fname)
+      path.join(releasesDir, release, 'rrf', fname)
     ];
     for (const p of possible) {
       try {
@@ -1543,8 +1538,8 @@ async function generateMRFILESReport(current, previous) {
 }
 
 async function generateMRHIERRemovalReport(current, previous) {
-  const curFile = path.join(releasesDir, current, 'META', 'MRHIER.RRF');
-  const prevFile = path.join(releasesDir, previous, 'META', 'MRHIER.RRF');
+  const curFile = path.join(releasesDir, current, 'rrf', 'MRHIER.RRF');
+  const prevFile = path.join(releasesDir, previous, 'rrf', 'MRHIER.RRF');
   const curLines = new Set(await readAllLines(curFile));
   const prevLines = await readAllLines(prevFile);
   const removedLines = prevLines.filter(l => !curLines.has(l));
@@ -1557,7 +1552,7 @@ async function generateMRHIERRemovalReport(current, previous) {
     if (parts[1]) auis.add(parts[1]);
   }
   const names = await collectConsoNames(
-    path.join(releasesDir, previous, 'META', 'MRCONSO.RRF'),
+    path.join(releasesDir, previous, 'rrf', 'RXNCONSO.RRF'),
     auis,
     new Set()
   );
@@ -1614,8 +1609,8 @@ async function readMRRANKOrders(file) {
 }
 
 async function generateMRRANKReport(current, previous) {
-  const curFile = path.join(releasesDir, current, 'META', 'MRRANK.RRF');
-  const prevFile = path.join(releasesDir, previous, 'META', 'MRRANK.RRF');
+  const curFile = path.join(releasesDir, current, 'rrf', 'MRRANK.RRF');
+  const prevFile = path.join(releasesDir, previous, 'rrf', 'MRRANK.RRF');
   const curMap = await readMRRANKOrders(curFile);
   const prevMap = await readMRRANKOrders(prevFile);
   const curLines = await readAllLines(curFile);
@@ -1684,38 +1679,23 @@ async function generateMRRANKReport(current, previous) {
         case 'line-count-diff':
           await generateLineCountDiff(current, previous);
           break;
-        case 'MRCONSO':
+        case 'RXNCONSO':
           await generateSABDiff(current, previous);
           break;
-        case 'MRSTY':
+        case 'RXNSTY':
           await generateSTYReports(current, previous, reportConfig);
           break;
-        case 'MRSAB':
-          await generateMRSABChangeReport(current, previous);
+        case 'RXNSAB':
+          await generateRXNSABChangeReport(current, previous);
           break;
-        case 'MRDEF':
-          await generateCountReport(current, previous, 'MRDEF.RRF', [4], 'MRDEF');
+        case 'RXNSAT':
+          await generateRXNSATReport(current, previous);
           break;
-        case 'MRSAT':
-          await generateMRSATReport(current, previous);
+        case 'RXNREL':
+          await generateRXNRELReport(current, previous);
           break;
-        case 'MRHIER':
-          await generateCountReport(current, previous, 'MRHIER.RRF', [4], 'MRHIER');
-          break;
-        case 'MRREL':
-          await generateMRRELReport(current, previous);
-          break;
-        case 'MRDOC':
-          await generateMRDOCReport(current, previous);
-          break;
-        case 'MRCOLS':
-          await generateMRCOLSReport(current, previous);
-          break;
-        case 'MRFILES':
-          await generateMRFILESReport(current, previous);
-          break;
-        case 'MRRANK':
-          await generateMRRANKReport(current, previous);
+        case 'RXNDOC':
+          await generateRXNDOCReport(current, previous);
           break;
         default:
           console.error('Unknown report:', singleReport);
@@ -1730,17 +1710,13 @@ async function generateMRRANKReport(current, previous) {
 
   const currentHashes = {
     lineCountDiff: hashOf(generateLineCountDiff.toString()),
-    MRCONSO: hashOf(generateSABDiff.toString()),
+    RXNCONSO: hashOf(generateSABDiff.toString()),
     STYReports: hashOf(generateSTYReports.toString()),
     countReport: hashOf(generateCountReport.toString()),
-    MRSAT: hashOf(generateMRSATReport.toString()),
-    MRSABChange: hashOf(generateMRSABChangeReport.toString()),
-    MRREL: hashOf(generateMRRELReport.toString()),
-    MRDOC: hashOf(generateMRDOCReport.toString()),
-    MRCOLS: hashOf(generateMRCOLSReport.toString()),
-    MRFILES: hashOf(generateMRFILESReport.toString()),
-    MRHIERRemoval: hashOf(generateMRHIERRemovalReport.toString()),
-    MRRANK: hashOf(generateMRRANKReport.toString()),
+    RXNSAT: hashOf(generateRXNSATReport.toString()),
+    RXNSABChange: hashOf(generateRXNSABChangeReport.toString()),
+    RXNREL: hashOf(generateRXNRELReport.toString()),
+    RXNDOC: hashOf(generateRXNDOCReport.toString()),
     wrapHtml: hashOf(wrapHtml.toString()),
     wrapDiffHtml: hashOf(wrapDiffHtml.toString()),
     preprocessFile: hashOf(fs.readFileSync(__filename, 'utf8'))
@@ -1779,29 +1755,25 @@ async function generateMRRANKReport(current, previous) {
       console.error('Failed generating line counts:', err.message);
     }
   }
-  const runMRCONSO = forceRun || !sameReleases || lastHashes.MRCONSO !== currentHashes.MRCONSO;
+  const runRXNCONSO = forceRun || !sameReleases || lastHashes.RXNCONSO !== currentHashes.RXNCONSO;
   const runSTYReports = forceRun || !sameReleases || lastHashes.STYReports !== currentHashes.STYReports || !sameConfig;
   const runCount = forceRun || !sameReleases ||
-    lastHashes.countReport !== currentHashes.countReport ||
-    lastHashes.MRHIERRemoval !== currentHashes.MRHIERRemoval;
-  const runMRSAT = forceRun || !sameReleases || lastHashes.MRSAT !== currentHashes.MRSAT;
-  const runMRSABChange = forceRun || !sameReleases || lastHashes.MRSABChange !== currentHashes.MRSABChange;
-  const runMRREL = forceRun || !sameReleases || lastHashes.MRREL !== currentHashes.MRREL;
-  const runMRDOC = forceRun || !sameReleases || lastHashes.MRDOC !== currentHashes.MRDOC;
-  const runMRCOLS = forceRun || !sameReleases || lastHashes.MRCOLS !== currentHashes.MRCOLS;
-  const runMRFILES = forceRun || !sameReleases || lastHashes.MRFILES !== currentHashes.MRFILES;
-  const runMRRANK = forceRun || !sameReleases || lastHashes.MRRANK !== currentHashes.MRRANK;
+    lastHashes.countReport !== currentHashes.countReport;
+  const runRXNSAT = forceRun || !sameReleases || lastHashes.RXNSAT !== currentHashes.RXNSAT;
+  const runRXNSABChange = forceRun || !sameReleases || lastHashes.RXNSABChange !== currentHashes.RXNSABChange;
+  const runRXNREL = forceRun || !sameReleases || lastHashes.RXNREL !== currentHashes.RXNREL;
+  const runRXNDOC = forceRun || !sameReleases || lastHashes.RXNDOC !== currentHashes.RXNDOC;
 
-  if (runMRCONSO) {
-    console.log('Generating MRCONSO report...');
+  if (runRXNCONSO) {
+    console.log('Generating RXNCONSO report...');
     try {
       await generateSABDiff(current, previous);
-      console.log('MRCONSO report done.');
+      console.log('RXNCONSO report done.');
     } catch (err) {
-      console.error('Failed MRCONSO report:', err.message);
+      console.error('Failed RXNCONSO report:', err.message);
     }
   } else {
-    console.log('MRCONSO logic unchanged; skipping.');
+    console.log('RXNCONSO logic unchanged; skipping.');
   }
 
   if (runSTYReports) {
@@ -1819,99 +1791,62 @@ async function generateMRRANKReport(current, previous) {
   if (runCount) {
     console.log('Generating count reports...');
     try {
-      await generateCountReport(current, previous, 'MRSAB.RRF', [1, 2], 'MRSAB');
-      await generateCountReport(current, previous, 'MRDEF.RRF', [4], 'MRDEF');
-      await generateCountReport(current, previous, 'MRHIER.RRF', [4], 'MRHIER');
+      await generateCountReport(current, previous, 'RXNSAB.RRF', [1, 2], 'RXNSAB');
       console.log('Count reports done.');
     } catch (err) {
       console.error('Failed count reports:', err.message);
     }
   } else {
-    console.log('Count report logic unchanged; skipping MRSAB/MRDEF/MRHIER counts.');
+    console.log('Count report logic unchanged; skipping RXNSAB counts.');
   }
 
-  if (runMRSAT) {
-    console.log('Generating MRSAT report...');
+  if (runRXNSAT) {
+    console.log('Generating RXNSAT report...');
     try {
-      await generateMRSATReport(current, previous);
-      console.log('MRSAT report done.');
+      await generateRXNSATReport(current, previous);
+      console.log('RXNSAT report done.');
     } catch (err) {
-      console.error('Failed MRSAT report:', err.message);
+      console.error('Failed RXNSAT report:', err.message);
     }
   } else {
-    console.log('MRSAT logic unchanged; skipping.');
+    console.log('RXNSAT logic unchanged; skipping.');
   }
 
-  if (runMRSABChange) {
-    console.log('Generating MRSAB change report...');
+  if (runRXNSABChange) {
+    console.log('Generating RXNSAB change report...');
     try {
-      await generateMRSABChangeReport(current, previous);
-      console.log('MRSAB change report done.');
+      await generateRXNSABChangeReport(current, previous);
+      console.log('RXNSAB change report done.');
     } catch (err) {
-      console.error('Failed MRSAB change report:', err.message);
+      console.error('Failed RXNSAB change report:', err.message);
     }
   } else {
-    console.log('MRSAB change logic unchanged; skipping.');
+    console.log('RXNSAB change logic unchanged; skipping.');
   }
 
-  if (runMRREL) {
-    console.log('Generating MRREL report...');
+  if (runRXNREL) {
+    console.log('Generating RXNREL report...');
     try {
-      await generateMRRELReport(current, previous);
-      console.log('MRREL report done.');
+      await generateRXNRELReport(current, previous);
+      console.log('RXNREL report done.');
     } catch (err) {
-      console.error('Failed MRREL report:', err.message);
+      console.error('Failed RXNREL report:', err.message);
     }
   } else {
-    console.log('MRREL logic unchanged; skipping.');
+    console.log('RXNREL logic unchanged; skipping.');
   }
-  if (runMRDOC) {
-    console.log('Generating MRDOC report...');
+  if (runRXNDOC) {
+    console.log('Generating RXNDOC report...');
     try {
-      await generateMRDOCReport(current, previous);
-      console.log('MRDOC report done.');
+      await generateRXNDOCReport(current, previous);
+      console.log('RXNDOC report done.');
     } catch (err) {
-      console.error('Failed MRDOC report:', err.message);
+      console.error('Failed RXNDOC report:', err.message);
     }
   } else {
-    console.log('MRDOC logic unchanged; skipping.');
-  }
-
-  if (runMRCOLS) {
-    console.log('Generating MRCOLS report...');
-    try {
-      await generateMRCOLSReport(current, previous);
-      console.log('MRCOLS report done.');
-    } catch (err) {
-      console.error('Failed MRCOLS report:', err.message);
-    }
-  } else {
-    console.log('MRCOLS logic unchanged; skipping.');
+    console.log('RXNDOC logic unchanged; skipping.');
   }
 
-  if (runMRFILES) {
-    console.log('Generating MRFILES report...');
-    try {
-      await generateMRFILESReport(current, previous);
-      console.log('MRFILES report done.');
-    } catch (err) {
-      console.error('Failed MRFILES report:', err.message);
-    }
-  } else {
-    console.log('MRFILES logic unchanged; skipping.');
-  }
-
-  if (runMRRANK) {
-    console.log('Generating MRRANK report...');
-    try {
-      await generateMRRANKReport(current, previous);
-      console.log('MRRANK report done.');
-    } catch (err) {
-      console.error('Failed MRRANK report:', err.message);
-    }
-  } else {
-    console.log('MRRANK logic unchanged; skipping.');
-  }
 
   await fsp.mkdir(reportsDir, { recursive: true });
   await fsp.writeFile(
